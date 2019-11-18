@@ -2,9 +2,9 @@ from keras.models import *
 from keras.layers import *
 from keras.optimizers import *
 from tensorflow.keras.datasets import mnist
-
 from matplotlib import pyplot as plt
 
+import time
 
 class GAN():
     def __init__(self):
@@ -156,5 +156,10 @@ class GAN():
 
 
 if __name__ == '__main__':
+    start = time.time()
+
     gan = GAN()
-    gan.train(epochs=1000, batch_size=32, save_interval=200)
+    gan.train(epochs=10000, batch_size=32, save_interval=200)
+
+    total_time = time.time() - start
+    print("training took: %.4f minutes" % (total_time / 60))
