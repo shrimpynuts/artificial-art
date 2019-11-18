@@ -2,15 +2,20 @@ from keras.models import *
 from keras.layers import *
 from keras.optimizers import *
 from tensorflow.keras.datasets import mnist
+import argparse
+import numpy as np
+from skimage import io
+import os
+import skimage
 
 from matplotlib import pyplot as plt
 
 
 class GAN():
-    def __init__(self):
-        self.img_rows = 28
-        self.img_cols = 28
-        self.channels = 1
+    def __init__(self, args):
+        self.img_rows = args.img_rows
+        self.img_cols = args.img_columns
+        self.channels = args.num_channels
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
 
         optimizer = Adam(0.0002, 0.5)
@@ -84,10 +89,63 @@ class GAN():
 
         return Model(img, validity)
 
+    # def train(self, epochs, batch_size=128, save_interval=50):
+    #
+    #     # Load the dataset
+    #     (X_train, _), (_, _) = mnist.load_data()
+    #
+    #     # Rescale -1 to 1
+    #     X_train = (X_train.astype(np.float32) - 127.5) / 127.5
+    #     X_train = np.expand_dims(X_train, axis=3)
+    #
+    #     half_batch = int(batch_size / 2)
+    #
+    #     for epoch in range(epochs):
+    #
+    #         # ---------------------
+    #         #  Train Discriminator
+    #         # ---------------------
+    #
+    #         # Select a random half batch of images
+    #         idx = np.random.randint(0, X_train.shape[0], half_batch)
+    #         imgs = X_train[idx]
+    #
+    #         noise = np.random.normal(0, 1, (half_batch, 100))
+    #
+    #         # Generate a half batch of new images
+    #         gen_imgs = self.generator.predict(noise)
+    #
+    #         # Train the discriminator
+    #         d_loss_real = self.discriminator.train_on_batch(imgs, np.ones((half_batch, 1)))
+    #         d_loss_fake = self.discriminator.train_on_batch(gen_imgs, np.zeros((half_batch, 1)))
+    #         d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+    #
+    #
+    #         # ---------------------
+    #         #  Train Generator
+    #         # ---------------------
+    #
+    #         noise = np.random.normal(0, 1, (batch_size, 100))
+    #
+    #         # The generator wants the discriminator to label the generated samples
+    #         # as valid (ones)
+    #         valid_y = np.array([1] * batch_size)
+    #
+    #         # Train the generator
+    #         g_loss = self.combined.train_on_batch(noise, valid_y)
+    #
+    #         # Plot the progress
+    #         print ("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss))
+    #
+    #         # If at save interval => save generated image samples
+    #         if epoch % save_interval == 0:
+    #             self.save_imgs(epoch)
+
     def train(self, epochs, batch_size=128, save_interval=50):
 
         # Load the dataset
-        (X_train, _), (_, _) = mnist.load_data()
+        # (X_train, _), (_, _) = mnist.load_data()
+        (X_train, _), (_, _) = buildData(args.image_dir, args.num_train, args.num_test)
 
         # Rescale -1 to 1
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
@@ -151,10 +209,41 @@ class GAN():
                 axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray')
                 axs[i,j].axis('off')
                 cnt += 1
-        fig.savefig("./images/mnist_%d.png" % epoch)
+        fig.savefig("./generatedImages/_%d.png" % epoch)
         plt.close()
 
 
+def buildData(dir_path, num_train, num_test):
+    """
+    Pre-process the images in the directory. Arrange them in arrays to be fed into the model.
+    :param dir_path:
+    :return:
+    """
+    trainData = []
+    images = x = io.imread_collection(indir + "/*.jpg")
+
+
+
+
+
+
 if __name__ == '__main__':
-    gan = GAN()
-    gan.train(epochs=1000, batch_size=32, save_interval=200)
+    parser = argparse.ArgumentParser(description="parser")
+    parser.add_argument('--image-dir', action='store', type=str, metavar='N',
+                        help='The the image directory')
+    parser.add_argument('--num-channel', action='store', type=int, metavar='N',
+                        help='Number of channels in convolutional layers')
+    parser.add_argument('--img-rows', action='store', type=int, metavar='N',
+                        help='Number of rows of pixels')
+    parser.add_argument('--img-columns', action='store', type=int, metavar='N',
+                        help='Number of columns of pixels')
+    parser.add_argument('--batch-size', action='store', type=int, metavar='N',
+                        help='Batch size')
+    parser.add_argument('--num-train', action='store', type=int, metavar='N',
+                        help='Number of training data')
+    parser.add_argument('--num-test', action='store', type=int, metavar='N',
+                        help='Number of testing data')
+    args = parser.parse_args()
+
+    gan = GAN(args)
+    gan.train(epochs=1000, batch_size=args.batch_size, save_interval=200)
