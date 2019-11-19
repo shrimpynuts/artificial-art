@@ -15,7 +15,7 @@ class GAN():
     def __init__(self, args):
         self.img_rows = args.img_rows
         self.img_cols = args.img_columns
-        self.channels = args.num_channels
+        self.channels = args.num_channel
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
 
         optimizer = Adam(0.0002, 0.5)
@@ -141,15 +141,15 @@ class GAN():
     #         if epoch % save_interval == 0:
     #             self.save_imgs(epoch)
 
-    def train(self, epochs, batch_size=128, save_interval=50):
+    def train(self, epochs, batch_size=64, save_interval=50):
 
         # Load the dataset
         # (X_train, _), (_, _) = mnist.load_data()
-        (X_train, _), (_, _) = buildData(args.image_dir, args.num_train, args.num_test)
+        (X_train, _) = buildData(args.image_dir, args.num_train, args.img_rows, args.img_columns, self.channels)
 
         # Rescale -1 to 1
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
-        X_train = np.expand_dims(X_train, axis=3)
+        # X_train = np.expand_dims(X_train, axis=3)
 
         half_batch = int(batch_size / 2)
 
@@ -206,21 +206,37 @@ class GAN():
         cnt = 0
         for i in range(r):
             for j in range(c):
-                axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray')
+                # axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray')
+                axs[i, j].imshow(gen_imgs[cnt, :, :, 0])
                 axs[i,j].axis('off')
                 cnt += 1
-        fig.savefig("./generatedImages/_%d.png" % epoch)
+        fig.savefig("generatedImages/_%d.png" % epoch)
         plt.close()
 
 
-def buildData(dir_path, num_train, num_test):
+def buildData(dir_path, num_train, img_rows, img_columns, num_channels):
     """
     Pre-process the images in the directory. Arrange them in arrays to be fed into the model.
     :param dir_path:
     :return:
     """
-    trainData = []
-    images = x = io.imread_collection(indir + "/*.jpg")
+    images = io.imread_collection(dir_path + "/*.jpg")
+    n = len(images.files)
+    print(n)
+    print("--")
+    train_data = np.zeros([n, img_rows, img_columns, num_channels], dtype=float)
+    label = np.zeros(n, dtype=float)
+    k = 0
+    for image_file in images.files:
+        # print(image_file)
+        a = io.imread(image_file)
+        # print(a.shape)
+        # print("")
+        if (len(a.shape) == 3):
+            train_data[k,:,:] = a
+            label[k] = 1
+            k+=1
+    return (train_data, label)
 
 
 
@@ -241,8 +257,8 @@ if __name__ == '__main__':
                         help='Batch size')
     parser.add_argument('--num-train', action='store', type=int, metavar='N',
                         help='Number of training data')
-    parser.add_argument('--num-test', action='store', type=int, metavar='N',
-                        help='Number of testing data')
+    # parser.add_argument('--num-test', action='store', type=int, metavar='N',
+    #                     help='Number of testing data')
     args = parser.parse_args()
 
     gan = GAN(args)
