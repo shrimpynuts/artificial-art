@@ -7,7 +7,6 @@ import time
 import os
 import sys
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--indir", help="which directory to take images from", default=None, type=str, required=True)
 parser.add_argument("--outdir", help="which directory to output processed images to", type=str, default=None, required=True)
