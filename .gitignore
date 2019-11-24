@@ -1,3 +1,5 @@
+landscape/
+out/
 .DS_Store
 .ipynb_checkpoints/
 .idea/
