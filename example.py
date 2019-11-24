@@ -51,17 +51,48 @@ class GAN():
 
         model = Sequential()
 
-        model.add(Dense(256, input_shape=noise_shape))
+        model.add(Dense(2048 * 4 * 4, input_dim=noise_shape))
+        model.add(Reshape((4, 4, 2048)))
+
+        model.add(Conv2DTranspose(1024, kernel_size=3, strides=2, padding='same'))
         model.add(LeakyReLU(alpha=0.2))
         model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(512))
+
+        model.add(Conv2DTranspose(512, kernel_size=3, strides=2, padding='same'))
         model.add(LeakyReLU(alpha=0.2))
         model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(1024))
+
+        model.add(Conv2DTranspose(256, kernel_size=3, strides=2, padding='same'))
         model.add(LeakyReLU(alpha=0.2))
         model.add(BatchNormalization(momentum=0.8))
+
+        model.add(Conv2DTranspose(128, kernel_size=3, strides=2, padding='same'))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(BatchNormalization(momentum=0.8))
+
+        model.add(Conv2DTranspose(64, kernel_size=3, strides=2, padding='same'))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(BatchNormalization(momentum=0.8))
+
+
+        model.add(Conv2DTranspose(3, kernel_size=3, strides=2, padding='same'))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(BatchNormalization(momentum=0.8))
+
         model.add(Dense(np.prod(self.img_shape), activation='tanh'))
         model.add(Reshape(self.img_shape))
+
+        # model.add(Dense(256, input_shape=noise_shape))
+        # model.add(LeakyReLU(alpha=0.2))
+        # model.add(BatchNormalization(momentum=0.8))
+        # model.add(Dense(512))
+        # model.add(LeakyReLU(alpha=0.2))
+        # model.add(BatchNormalization(momentum=0.8))
+        # model.add(Dense(1024))
+        # model.add(LeakyReLU(alpha=0.2))
+        # model.add(BatchNormalization(momentum=0.8))
+        # model.add(Dense(np.prod(self.img_shape), activation='tanh'))
+        # model.add(Reshape(self.img_shape))
 
         model.summary()
 
@@ -141,7 +172,7 @@ class GAN():
     #         if epoch % save_interval == 0:
     #             self.save_imgs(epoch)
 
-    def train(self, epochs, batch_size=64, save_interval=50):
+    def train(self, epochs, batch_size=128, save_interval=50):
 
         # Load the dataset
         # (X_train, _), (_, _) = mnist.load_data()
