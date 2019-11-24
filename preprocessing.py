@@ -65,7 +65,7 @@ def preprocessing(indir, outdir, width, height, plot_dim=False):
     sys.stdout.write("]\n")  # this ends the progress bar
 
     end_time = time.time()
-    print("Processing finished in %d" % (end_time - start_time) / 60.0)
+    print("Processing finished in " + str((end_time - start_time) / 60.0) + " minutes")
 
 
 if __name__ == '__main__':
