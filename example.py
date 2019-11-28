@@ -9,7 +9,6 @@ import os
 from matplotlib import pyplot as plt
 import keras
 import time
-import pickle
 
 
 logdir = "logs/scalar/"
@@ -240,7 +239,6 @@ class GAN():
         print("training took: %.4f minutes" % (total_time / 60))
 
     def save_imgs(self, save_dir, epoch):
-        # r, c = 5, 5
         num_image_samples = 10
         noise = np.random.normal(0, 1, (num_image_samples, 100))
         gen_imgs = self.generator.predict(noise)
@@ -248,22 +246,10 @@ class GAN():
         # Rescale images 0 - 1
         gen_imgs = 0.5 * gen_imgs + 0.5
 
+        # Save all num_image_samples images
         for i in range(num_image_samples):
             img = gen_imgs[i, :, :, :]
             plt.imsave(save_dir +  "/_%d-%d.png" % (epoch, i), img)
-
-        # fig, axs = plt.subplots(r, c)
-        # cnt = 0
-        # for i in range(r):
-        #     for j in range(c):
-        #         img = gen_imgs[cnt, :, :, :]
-        #         with open('./img.pkl', 'wb') as imagefile:
-        #             pickle.dump(img, imagefile)
-        #         axs[i, j].imshow(img, cmap='viridis')
-        #         axs[i,j].axis('off')
-        #         cnt += 1
-        # fig.savefig(save_dir + "/_%d.png" % epoch)
-        # plt.close()
 
 
 def buildData(dir_path, img_rows, img_columns, num_channels):
