@@ -8,6 +8,8 @@ from datetime import datetime
 import os
 from matplotlib import pyplot as plt
 import keras
+import time
+import pickle
 
 
 logdir = "logs/scalar/"
@@ -168,6 +170,9 @@ class GAN():
 
     def train(self, epochs, batch_size=128, save_interval=50, log_interval=100):
 
+        start = time.time()
+        print("Beginning training")
+
         # figure out directory to save images to
         now = datetime.now()
         save_dir = "out/%d-%d %d:%d" % (now.month, now.day, now.hour, now.minute)
@@ -231,25 +236,34 @@ class GAN():
                 generator_callback.on_epoch_end(epoch, named_logs(self.generator, g_loss))
                 discriminator_callback.on_epoch_end(epoch, named_logs(self.discriminator, d_loss))
 
+        total_time = time.time() - start
+        print("training took: %.4f minutes" % (total_time / 60))
 
     def save_imgs(self, save_dir, epoch):
-        r, c = 5, 5
-        noise = np.random.normal(0, 1, (r * c, 100))
+        # r, c = 5, 5
+        num_image_samples = 10
+        noise = np.random.normal(0, 1, (num_image_samples, 100))
         gen_imgs = self.generator.predict(noise)
 
         # Rescale images 0 - 1
         gen_imgs = 0.5 * gen_imgs + 0.5
 
-        fig, axs = plt.subplots(r, c)
-        cnt = 0
-        for i in range(r):
-            for j in range(c):
-                img = gen_imgs[cnt, :, :, :]
-                axs[i, j].imshow(img, cmap='viridis')
-                axs[i,j].axis('off')
-                cnt += 1
-        fig.savefig(save_dir + "/_%d.png" % epoch)
-        plt.close()
+        for i in range(num_image_samples):
+            img = gen_imgs[i, :, :, :]
+            plt.imsave(save_dir +  "/_%d-%d.png" % (epoch, i), img)
+
+        # fig, axs = plt.subplots(r, c)
+        # cnt = 0
+        # for i in range(r):
+        #     for j in range(c):
+        #         img = gen_imgs[cnt, :, :, :]
+        #         with open('./img.pkl', 'wb') as imagefile:
+        #             pickle.dump(img, imagefile)
+        #         axs[i, j].imshow(img, cmap='viridis')
+        #         axs[i,j].axis('off')
+        #         cnt += 1
+        # fig.savefig(save_dir + "/_%d.png" % epoch)
+        # plt.close()
 
 
 def buildData(dir_path, img_rows, img_columns, num_channels):
