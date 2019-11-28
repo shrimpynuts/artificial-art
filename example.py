@@ -166,7 +166,7 @@ class GAN():
         return Model(img, validity)
 
 
-    def train(self, epochs, batch_size=128, save_interval=50, log_interval=10):
+    def train(self, epochs, batch_size=128, save_interval=50, log_interval=100):
 
         # figure out directory to save images to
         now = datetime.now()
