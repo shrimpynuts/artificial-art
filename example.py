@@ -7,6 +7,36 @@ from skimage import io
 from datetime import datetime
 import os
 from matplotlib import pyplot as plt
+import tensorflow as tf
+# from keras import backend as K
+# import tensorflow.python.keras.backend as K
+import keras
+import time
+
+
+logdir = "logs/scalar/"
+generator_logdir = logdir +"generator/" + datetime.now().strftime("%m/%d-%H:%M")
+discriminator_logdir = logdir+"discriminator/" + datetime.now().strftime("%m/%d-%H%:%M")
+generator_callback = keras.callbacks.TensorBoard(log_dir=generator_logdir, write_images=True)
+discriminator_callback = keras.callbacks.TensorBoard(log_dir=discriminator_logdir, write_images=True)
+
+# https://gist.github.com/joelthchao/ef6caa586b647c3c032a4f84d52e3a11
+def write_log(callback, names, logs, batch_no):
+    for name, value in zip(names, logs):
+        summary = tf.Summary()
+        summary_value = summary.value.add()
+        summary_value.simple_value = value
+        summary_value.tag = name
+        callback.writer.add_summary(summary, batch_no)
+        callback.writer.flush()
+
+# https://gist.github.com/erenon/91f526302cd8e9d21b73f24c0f9c4bb8
+def named_logs(model, logs):
+  result = {}
+  for l in zip(model.metrics_names, logs):
+    result[l[0]] = l[1]
+  return result
+
 
 
 class GAN():
@@ -16,7 +46,15 @@ class GAN():
         self.channels = args.num_channel
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
 
-        optimizer = Adam(0.0002, 0.5)
+        
+        # config = tf.compat.v1.ConfigProto()
+        # config.gpu_options.allow_growth = True
+        # config.gpu_options.per_process_gpu_memory_fraction = 0.999
+        # session = tf.compat.v1.Session(config=config)
+        # tf.compat.v1.keras.backend.set_session(session)
+
+        
+        optimizer = Adam(0.0001, 0.5)
 
         # Build and compile the discriminator
         self.discriminator = self.build_discriminator()
@@ -33,7 +71,7 @@ class GAN():
         img = self.generator(z)
 
         # For the combined model we will only train the generator
-        self.discriminator.trainable = False
+        # self.discriminator.trainable = False
 
         # The valid takes generated images as input and determines validity
         valid = self.discriminator(img)
@@ -50,7 +88,7 @@ class GAN():
 
         model = Sequential()
 
-        model.add(Dense(2048 * 4 * 4, input_dim=noise_shape))
+        model.add(Dense(2048 * 4 * 4, input_shape=noise_shape))
         model.add(Reshape((4, 4, 2048)))
 
         model.add(Conv2DTranspose(1024, kernel_size=3, strides=2, padding='same'))
@@ -78,7 +116,14 @@ class GAN():
         model.add(LeakyReLU(alpha=0.2))
         model.add(BatchNormalization(momentum=0.8))
 
-        model.add(Dense(np.prod(self.img_shape), activation='tanh'))
+        # model.add(Dense(np.prod(self.img_shape), activation='tanh'))
+        # print(self.img_shape)
+        # model.summary()
+
+        model.add(Flatten())
+        model.add(Activation('sigmoid'))
+        # model.add(Dense((2048), activation='tanh'))
+        # model.add(Dense(np.prod(self.img_shape), activation='tanh'))
         model.add(Reshape(self.img_shape))
 
         # model.add(Dense(256, input_shape=noise_shape))
@@ -108,21 +153,33 @@ class GAN():
         model = Sequential()
 
         model.add(Conv2D(32, (4, 4), padding='same', input_shape=img_shape))
-        model.add(LeakyReLU(alpha=0.1))
+        model.add(LeakyReLU(alpha=0.2))
         model.add(Conv2D(64, (4, 4), padding='same'))
-        model.add(LeakyReLU(alpha=0.1))
+        model.add(LeakyReLU(alpha=0.2))
         model.add(Conv2D(128, (4, 4), padding='same'))
-        model.add(LeakyReLU(alpha=0.1))
+        model.add(LeakyReLU(alpha=0.2))
         model.add(Conv2D(256, (4, 4), padding='same'))
-        model.add(LeakyReLU(alpha=0.1))
-        model.add(Conv2D(512, (4, 4), padding='same'))
         model.add(LeakyReLU(alpha=0.1))
         # model.add(Conv2D(512, (4, 4), padding='same'))
         # model.add(LeakyReLU(alpha=0.1))
+
+        # model.add(Conv2D(512, (4, 4), padding='same'))
+        # model.add(LeakyReLU(alpha=0.1))
         model.add(Flatten())
-        model.add(Dense(1024, activation='relu'))
-        model.add(Dense(512, activation='relu'))
-        model.add(Dense(1, activation='relu'))
+        # model.add(Dense(1024, activation='relu'))
+        
+        # with tf.device('/gpu:2'):
+        model.add(Dense(64))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(Dense(16))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(Dense(16))
+        model.add(Dense(16))
+        model.add(LeakyReLU(alpha=0.2))
+        # model.add(LeakyReLU(alpha=0.2))
+        # model.add(Dense(16))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(Dense(1, activation='sigmoid'))
 
         # model.add(Flatten(input_shape=img_shape))
         # model.add(Dense(512))
@@ -140,6 +197,9 @@ class GAN():
 
     def train(self, epochs, batch_size=128, save_interval=50):
 
+        start = time.time()
+        print("Beginning training")
+
         # figure out directory to save images to
         now = datetime.now()
         save_dir = "out/%d-%d %d:%d" % (now.month, now.day, now.hour, now.minute)
@@ -150,7 +210,7 @@ class GAN():
 
         # Load the dataset
         # (X_train, _), (_, _) = mnist.load_data()
-        (X_train, _) = buildData(args.image_dir, args.num_train, args.img_rows, args.img_columns, self.channels)
+        (X_train, _) = buildData(args.image_dir, args.img_rows, args.img_columns, self.channels)
 
         # Rescale -1 to 1
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
@@ -177,6 +237,12 @@ class GAN():
             d_loss_real = self.discriminator.train_on_batch(imgs, np.ones((half_batch, 1)))
             d_loss_fake = self.discriminator.train_on_batch(gen_imgs, np.zeros((half_batch, 1)))
             d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+            print("--------loss--------")
+            print(d_loss_real)
+            print(d_loss_fake)
+            print(d_loss)
+            print(d_loss[1])
+            print("")
 
 
             # ---------------------
@@ -190,6 +256,7 @@ class GAN():
             valid_y = np.array([1] * batch_size)
 
             # Train the generator
+            # with tf.device('/gpu:3'):
             g_loss = self.combined.train_on_batch(noise, valid_y)
 
             # Plot the progress
@@ -197,29 +264,54 @@ class GAN():
 
             # If at save interval => save generated image samples
             if epoch % save_interval == 0:
+                print("Currently at %.4f minutes" % (time.time() - start / 60))
                 self.save_imgs(save_dir, epoch)
+            #
+            # if epoch % 100 == 0:
+            #     generator_callback.on_epoch_end(epoch, named_logs(self.generator, g_loss))
+            #     discriminator_callback.on_epoch_end(epoch, named_logs(self.discriminator, d_loss))
+
+        print("training took: %.4f minutes" % (time.time() - start / 60))
 
 
     def save_imgs(self, save_dir, epoch):
-        r, c = 5, 5
-        noise = np.random.normal(0, 1, (r * c, 100))
+        num_image_samples = 10
+        noise = np.random.normal(0, 1, (num_image_samples, 100))
         gen_imgs = self.generator.predict(noise)
 
         # Rescale images 0 - 1
         gen_imgs = 0.5 * gen_imgs + 0.5
 
-        fig, axs = plt.subplots(r, c)
-        cnt = 0
-        for i in range(r):
-            for j in range(c):
-                axs[i, j].imshow(gen_imgs[cnt, :, :, 0])
-                axs[i,j].axis('off')
-                cnt += 1
-        fig.savefig(save_dir + "/_%d.png" % epoch)
-        plt.close()
+        # print("images??????? %d" % epoch)
+        # print(gen_imgs)
+        # print("")
+
+        for i in range(num_image_samples):
+            img = gen_imgs[i, :, :, :]
+            # print("----- %d: %d" % (epoch, i))
+            # print(img)
+            # print("")
+            plt.imsave(save_dir + "/_%d-%d.png" % (epoch, i), img)
+
+        # r, c = 5, 5
+        # noise = np.random.normal(0, 1, (r * c, 100))
+        # gen_imgs = self.generator.predict(noise)
+        #
+        # # Rescale images 0 - 1
+        # gen_imgs = 0.5 * gen_imgs + 0.5
+        #
+        # fig, axs = plt.subplots(r, c)
+        # cnt = 0
+        # for i in range(r):
+        #     for j in range(c):
+        #         axs[i, j].imshow(gen_imgs[cnt, :, :, 0])
+        #         axs[i,j].axis('off')
+        #         cnt += 1
+        # fig.savefig(save_dir + "/_%d.png" % epoch)
+        # plt.close()
 
 
-def buildData(dir_path, num_train, img_rows, img_columns, num_channels):
+def buildData(dir_path, img_rows, img_columns, num_channels):
     """
     Pre-process the images in the directory. Arrange them in arrays to be fed into the model.
     :param dir_path:
@@ -256,11 +348,13 @@ if __name__ == '__main__':
                         help='Number of columns of pixels')
     parser.add_argument('--batch-size', action='store', type=int, metavar='N',
                         help='Batch size')
-    parser.add_argument('--num-train', action='store', type=int, metavar='N',
-                        help='Number of training data')
+    #parser.add_argument('--num-train', action='store', type=int, metavar='N',
+    #                    help='Number of training data')
     # parser.add_argument('--num-test', action='store', type=int, metavar='N',
     #                     help='Number of testing data')
     args = parser.parse_args()
 
-    gan = GAN(args)
-    gan.train(epochs=1000, batch_size=args.batch_size, save_interval=1)
+    # with tf.device(['/gpu:0','/gpu:1','/gpu:2','/gpu:3','/gpu:4','/gpu:5','/gpu:6','/gpu:7']):
+    with tf.device('/gpu:1'):
+        gan = GAN(args)
+        gan.train(epochs=1000, batch_size=args.batch_size, save_interval=50)
