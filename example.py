@@ -79,7 +79,7 @@ class GAN():
 
         model = Sequential()
 
-        model.add(Dense(2048 * 4 * 4, input_dim=noise_shape))
+        model.add(Dense(2048 * 4 * 4, input_shape=noise_shape))
         model.add(Reshape((4, 4, 2048)))
 
         model.add(Conv2DTranspose(1024, kernel_size=3, strides=2, padding='same'))
@@ -105,8 +105,10 @@ class GAN():
         model.add(Conv2DTranspose(3, kernel_size=3, strides=2, padding='same'))
         model.add(LeakyReLU(alpha=0.2))
         model.add(BatchNormalization(momentum=0.8))
-
-        model.add(Dense(np.prod(self.img_shape), activation='tanh'))
+        
+        model.add(Flatten())
+        model.add(Activation('sigmoid'))
+        #model.add(Dense(np.prod(self.img_shape), activation='tanh'))
         model.add(Reshape(self.img_shape))
 
 
@@ -142,9 +144,9 @@ class GAN():
         model.add(LeakyReLU(alpha=0.1))
         model.add(Conv2D(128, (4, 4), padding='same'))
         model.add(LeakyReLU(alpha=0.1))
-        model.add(Conv2D(256, (32, 32), padding='same'))
+        model.add(Conv2D(256, (4, 4), padding='same'))
         model.add(LeakyReLU(alpha=0.1))
-        model.add(Conv2D(16, (64, 64), padding='same'))
+        model.add(Conv2D(512, (4, 4), padding='same'))
         model.add(LeakyReLU(alpha=0.1))
         model.add(Flatten())
         model.add(Dense(1024, activation='relu'))
@@ -286,5 +288,6 @@ if __name__ == '__main__':
                         help='Batch size')
     args = parser.parse_args()
 
-    gan = GAN(args)
-    gan.train(epochs=100000, batch_size=args.batch_size, save_interval=10)
+    with tf.device('/device:XLA_GPU:0'):
+        gan = GAN(args)
+        gan.train(epochs=100000, batch_size=args.batch_size, save_interval=10)
