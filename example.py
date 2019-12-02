@@ -79,48 +79,48 @@ class GAN():
 
         model = Sequential()
 
-        # model.add(Dense(2048 * 4 * 4, input_dim=noise_shape))
-        # model.add(Reshape((4, 4, 2048)))
-        #
-        # model.add(Conv2DTranspose(1024, kernel_size=3, strides=2, padding='same'))
-        # model.add(LeakyReLU(alpha=0.2))
-        # model.add(BatchNormalization(momentum=0.8))
-        #
-        # model.add(Conv2DTranspose(512, kernel_size=3, strides=2, padding='same'))
-        # model.add(LeakyReLU(alpha=0.2))
-        # model.add(BatchNormalization(momentum=0.8))
-        #
-        # model.add(Conv2DTranspose(256, kernel_size=3, strides=2, padding='same'))
-        # model.add(LeakyReLU(alpha=0.2))
-        # model.add(BatchNormalization(momentum=0.8))
-        #
-        # model.add(Conv2DTranspose(128, kernel_size=3, strides=2, padding='same'))
-        # model.add(LeakyReLU(alpha=0.2))
-        # model.add(BatchNormalization(momentum=0.8))
-        #
-        # model.add(Conv2DTranspose(64, kernel_size=3, strides=2, padding='same'))
-        # model.add(LeakyReLU(alpha=0.2))
-        # model.add(BatchNormalization(momentum=0.8))
-        #
-        #
-        # model.add(Conv2DTranspose(3, kernel_size=3, strides=2, padding='same'))
-        # model.add(LeakyReLU(alpha=0.2))
-        # model.add(BatchNormalization(momentum=0.8))
-        #
-        # model.add(Dense(np.prod(self.img_shape), activation='tanh'))
-        # model.add(Reshape(self.img_shape))
+        model.add(Dense(2048 * 4 * 4, input_dim=noise_shape))
+        model.add(Reshape((4, 4, 2048)))
 
-        model.add(Dense(256, input_shape=noise_shape))
+        model.add(Conv2DTranspose(1024, kernel_size=3, strides=2, padding='same'))
         model.add(LeakyReLU(alpha=0.2))
         model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(512))
+
+        model.add(Conv2DTranspose(512, kernel_size=3, strides=2, padding='same'))
         model.add(LeakyReLU(alpha=0.2))
         model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(1024))
+
+        model.add(Conv2DTranspose(256, kernel_size=3, strides=2, padding='same'))
         model.add(LeakyReLU(alpha=0.2))
         model.add(BatchNormalization(momentum=0.8))
+
+        model.add(Conv2DTranspose(128, kernel_size=3, strides=2, padding='same'))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(BatchNormalization(momentum=0.8))
+
+        model.add(Conv2DTranspose(64, kernel_size=3, strides=2, padding='same'))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(BatchNormalization(momentum=0.8))
+
+        model.add(Conv2DTranspose(3, kernel_size=3, strides=2, padding='same'))
+        model.add(LeakyReLU(alpha=0.2))
+        model.add(BatchNormalization(momentum=0.8))
+
         model.add(Dense(np.prod(self.img_shape), activation='tanh'))
         model.add(Reshape(self.img_shape))
+
+
+        # model.add(Dense(256, input_shape=noise_shape))
+        # model.add(LeakyReLU(alpha=0.2))
+        # model.add(BatchNormalization(momentum=0.8))
+        # model.add(Dense(512))
+        # model.add(LeakyReLU(alpha=0.2))
+        # model.add(BatchNormalization(momentum=0.8))
+        # model.add(Dense(1024))
+        # model.add(LeakyReLU(alpha=0.2))
+        # model.add(BatchNormalization(momentum=0.8))
+        # model.add(Dense(np.prod(self.img_shape), activation='tanh'))
+        # model.add(Reshape(self.img_shape))
 
         model.summary()
 
@@ -136,29 +136,27 @@ class GAN():
 
         model = Sequential()
 
-        # model.add(Conv2D(32, (4, 4), padding='same', input_shape=img_shape))
-        # model.add(LeakyReLU(alpha=0.1))
-        # model.add(Conv2D(64, (4, 4), padding='same'))
-        # model.add(LeakyReLU(alpha=0.1))
-        # model.add(Conv2D(128, (4, 4), padding='same'))
-        # model.add(LeakyReLU(alpha=0.1))
-        # model.add(Conv2D(256, (4, 4), padding='same'))
-        # model.add(LeakyReLU(alpha=0.1))
-        # model.add(Conv2D(512, (4, 4), padding='same'))
-        # model.add(LeakyReLU(alpha=0.1))
-        # # model.add(Conv2D(512, (4, 4), padding='same'))
-        # # model.add(LeakyReLU(alpha=0.1))
-        # model.add(Flatten())
-        # model.add(Dense(1024, activation='relu'))
-        # model.add(Dense(512, activation='relu'))
-        # model.add(Dense(1, activation='relu'))
+        model.add(Conv2D(32, (4, 4), padding='same', input_shape=img_shape))
+        model.add(LeakyReLU(alpha=0.1))
+        model.add(Conv2D(64, (4, 4), padding='same'))
+        model.add(LeakyReLU(alpha=0.1))
+        model.add(Conv2D(128, (4, 4), padding='same'))
+        model.add(LeakyReLU(alpha=0.1))
+        model.add(Conv2D(256, (32, 32), padding='same'))
+        model.add(LeakyReLU(alpha=0.1))
+        model.add(Conv2D(16, (64, 64), padding='same'))
+        model.add(LeakyReLU(alpha=0.1))
+        model.add(Flatten())
+        model.add(Dense(1024, activation='relu'))
+        model.add(Dense(64, activation='relu'))
+        model.add(Dense(1, activation='relu'))
 
-        model.add(Flatten(input_shape=img_shape))
-        model.add(Dense(512))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(Dense(256))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(Dense(1, activation='sigmoid'))
+        # model.add(Flatten(input_shape=img_shape))
+        # model.add(Dense(512))
+        # model.add(LeakyReLU(alpha=0.2))
+        # model.add(Dense(256))
+        # model.add(LeakyReLU(alpha=0.2))
+        # model.add(Dense(1, activation='sigmoid'))
         model.summary()
 
         img = Input(shape=img_shape)
@@ -289,4 +287,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     gan = GAN(args)
-    gan.train(epochs=1000, batch_size=args.batch_size, save_interval=10)
+    gan.train(epochs=100000, batch_size=args.batch_size, save_interval=10)
