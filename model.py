@@ -19,8 +19,8 @@ from keras.utils.generic_utils import get_custom_objects
 logdir = "logs/scalar/"
 generator_logdir = logdir +"generator/" + datetime.now().strftime("%m/%d-%H:%M")
 discriminator_logdir = logdir+"discriminator/" + datetime.now().strftime("%m/%d-%H%:%M")
-generator_callback = keras.callbacks.TensorBoard(log_dir=generator_logdir, write_images=True)
-discriminator_callback = keras.callbacks.TensorBoard(log_dir=discriminator_logdir, write_images=True)
+generator_callback = keras.callbacks.TensorBoard(log_dir=generator_logdir, write_images=True, write_graph=True)
+discriminator_callback = keras.callbacks.TensorBoard(log_dir=discriminator_logdir, write_images=True, write_graph=True)
 
 # https://gist.github.com/joelthchao/ef6caa586b647c3c032a4f84d52e3a11
 def write_log(callback, names, logs, batch_no):
@@ -45,8 +45,36 @@ def custom_activation(x):
 get_custom_objects().update({'custom_activation': Activation(custom_activation)})
 
 
+# https://stackoverflow.com/questions/51140950/how-to-obtain-the-gradients-in-keras
+def get_weight_grad(model, inputs, outputs):
+    """ Gets gradient of model for given inputs and outputs for all weights"""
+    grads = model.optimizer.get_gradients(model.total_loss, model.trainable_weights)
+    print("grads")
+    print(grads)
+    print(len(grads))
+    symb_inputs = (model._feed_inputs + model._feed_targets + model._feed_sample_weights)
+    print("symb_inputs")
+    print(symb_inputs)
+    print(len(symb_inputs))
+    print(symb_inputs[0])
+    f = K.function(symb_inputs, grads)
+    x, y, sample_weight = model._standardize_user_data(inputs, outputs)
+    output_grad = f(x + y + sample_weight)
+    return output_grad
+
+def get_layer_output_grad(model, inputs, outputs, layer=-1):
+    """ Gets gradient a layer output for given inputs and outputs"""
+    grads = model.optimizer.get_gradients(model.total_loss, model.layers[layer].output)
+    symb_inputs = (model._feed_inputs + model._feed_targets + model._feed_sample_weights)
+    f = K.function(symb_inputs, grads)
+    x, y, sample_weight = model._standardize_user_data(inputs, outputs)
+    output_grad = f(x + y + sample_weight)
+    return output_grad
+
+
 class GAN():
     def __init__(self, args):
+        print("initialization---")
         self.img_rows = args.img_rows
         self.img_cols = args.img_columns
         self.channels = args.num_channel
@@ -61,7 +89,7 @@ class GAN():
 
 
         optimizer_g = Adam(0.0001, 0.5)
-        optimizer_d = Adam(0.0001, 0.5)
+        optimizer_d = Adam(0.00001, 0.5)
 
         # Build and compile the discriminator
         self.discriminator = self.build_discriminator()
@@ -226,7 +254,7 @@ class GAN():
         # model.add(LeakyReLU(alpha=0.1))
 
         model.add(Flatten())
-        model.add(Dropout(0.4))
+        model.add(Dropout(0.6))
         model.add(Dense(1, activation='sigmoid'))
 
         ##################
@@ -283,6 +311,12 @@ class GAN():
 
     def train(self, epochs, batch_size=128, save_interval=50):
 
+        generator_gradient = []
+        discriminator_gradient_real = []
+        discriminator_gradient_fake = []
+        epochs_index = []
+
+
         start = time.time()
         print("Beginning training")
 
@@ -327,8 +361,10 @@ class GAN():
             # else:
             # print(np.zeros((half_batch, 1)).shape)
             # print((np.random.random_sample((half_batch,))*0.1).shape)
-            d_loss_real = self.discriminator.train_on_batch(imgs, np.zeros((half_batch, 1))+np.random.random_sample((half_batch,1))*0.1)
-            d_loss_fake = self.discriminator.train_on_batch(gen_imgs, np.ones((half_batch, 1))-np.random.random_sample((half_batch,1))*0.1)
+            d_real_labels = np.zeros((half_batch, 1))+np.random.random_sample((half_batch,1))*0.1
+            d_fake_labels = np.ones((half_batch, 1))-np.random.random_sample((half_batch,1))*0.1
+            d_loss_real = self.discriminator.train_on_batch(imgs, d_real_labels)
+            d_loss_fake = self.discriminator.train_on_batch(gen_imgs, d_fake_labels)
 
             d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
             if epoch % 1 == 0:
@@ -383,6 +419,20 @@ class GAN():
                 generator_callback.on_epoch_end(epoch, named_logs(self.generator, g_loss))
                 # if epoch > 3000:
                 discriminator_callback.on_epoch_end(epoch, named_logs(self.discriminator, d_loss))
+
+            # record gradient
+            if epoch % 1 == 0:
+                generator_weight_grads = get_weight_grad(self.combined, noise, valid_y)
+                discriminator_weight_grads_real = get_weight_grad(self.discriminator, imgs, d_real_labels)
+                discriminator_weight_grads_fake = get_weight_grad(self.discriminator, gen_imgs, d_fake_labels)
+                print("-----GRADIENTS")
+                print(generator_weight_grads)
+                print("")
+                generator_gradient.append(generator_weight_grads)
+                discriminator_gradient_real.append(discriminator_weight_grads_real)
+                discriminator_gradient_fake.append(discriminator_weight_grads_fake)
+                epochs_index.append(epoch)
+
 
         print("training took: %.4f minutes" % (time.time() - start / 60))
 
