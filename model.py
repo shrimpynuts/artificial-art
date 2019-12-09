@@ -42,8 +42,6 @@ def named_logs(model, logs):
 
 def custom_activation(x):
     return 1.0 * x / 2.0
-
-
 get_custom_objects().update({'custom_activation': Activation(custom_activation)})
 
 
@@ -54,7 +52,7 @@ class GAN():
         self.channels = args.num_channel
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
 
-        
+
         # config = tf.compat.v1.ConfigProto()
         # config.gpu_options.allow_growth = True
         # config.gpu_options.per_process_gpu_memory_fraction = 0.999
@@ -323,12 +321,15 @@ class GAN():
 
             # if epoch > 3000:
             # Train the discriminator
-            if epoch < 30:
-                d_loss_real = self.discriminator.train_on_batch(imgs, np.zeros((half_batch, 1)))
-                d_loss_fake = self.discriminator.train_on_batch(gen_imgs, np.ones((half_batch, 1)))
-            else:
-                d_loss_real = self.discriminator.train_on_batch(imgs, np.ones((half_batch, 1)))
-                d_loss_fake = self.discriminator.train_on_batch(gen_imgs, np.zeros((half_batch, 1)))
+            # if epoch < 30:
+            #     d_loss_real = self.discriminator.train_on_batch(imgs, np.zeros((half_batch, 1)))
+            #     d_loss_fake = self.discriminator.train_on_batch(gen_imgs, np.ones((half_batch, 1)))
+            # else:
+            # print(np.zeros((half_batch, 1)).shape)
+            # print((np.random.random_sample((half_batch,))*0.1).shape)
+            d_loss_real = self.discriminator.train_on_batch(imgs, np.zeros((half_batch, 1))+np.random.random_sample((half_batch,1))*0.1)
+            d_loss_fake = self.discriminator.train_on_batch(gen_imgs, np.ones((half_batch, 1))-np.random.random_sample((half_batch,1))*0.1)
+
             d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
             if epoch % 1 == 0:
                 # print("--------loss--------")
@@ -353,10 +354,10 @@ class GAN():
 
             # The generator wants the discriminator to label the generated samples
             # as valid (ones)
-            if epoch < 30:
-                valid_y = np.array([0] * batch_size)
-            else:
-                valid_y = np.array([1] * batch_size)
+            # if epoch < 30:
+            #     valid_y = np.array([0] * batch_size)
+            # else:
+            valid_y = np.array([0] * batch_size)
 
             # Train the generator
             # with tf.device('/gpu:3'):
