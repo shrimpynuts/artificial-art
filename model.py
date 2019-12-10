@@ -89,7 +89,7 @@ class GAN():
 
 
         optimizer_g = Adam(0.0001, 0.5)
-        optimizer_d = Adam(0.00001, 0.5)
+        optimizer_d = Adam(0.0001, 0.5)
 
         # Build and compile the discriminator
         self.discriminator = self.build_discriminator()
@@ -254,7 +254,7 @@ class GAN():
         # model.add(LeakyReLU(alpha=0.1))
 
         model.add(Flatten())
-        model.add(Dropout(0.6))
+        model.add(Dropout(0.4))
         model.add(Dense(1, activation='sigmoid'))
 
         ##################
@@ -363,8 +363,10 @@ class GAN():
             # print((np.random.random_sample((half_batch,))*0.1).shape)
             d_real_labels = np.zeros((half_batch, 1))+np.random.random_sample((half_batch,1))*0.1
             d_fake_labels = np.ones((half_batch, 1))-np.random.random_sample((half_batch,1))*0.1
-            d_loss_real = self.discriminator.train_on_batch(imgs, d_real_labels)
-            d_loss_fake = self.discriminator.train_on_batch(gen_imgs, d_fake_labels)
+
+            if epoch % 4 == 0:
+                d_loss_real = self.discriminator.train_on_batch(imgs, d_real_labels)
+                d_loss_fake = self.discriminator.train_on_batch(gen_imgs, d_fake_labels)
 
             d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
             if epoch % 1 == 0:
@@ -421,17 +423,17 @@ class GAN():
                 discriminator_callback.on_epoch_end(epoch, named_logs(self.discriminator, d_loss))
 
             # record gradient
-            if epoch % 1 == 0:
-                generator_weight_grads = get_weight_grad(self.combined, noise, valid_y)
-                discriminator_weight_grads_real = get_weight_grad(self.discriminator, imgs, d_real_labels)
-                discriminator_weight_grads_fake = get_weight_grad(self.discriminator, gen_imgs, d_fake_labels)
-                print("-----GRADIENTS")
-                print(generator_weight_grads)
-                print("")
-                generator_gradient.append(generator_weight_grads)
-                discriminator_gradient_real.append(discriminator_weight_grads_real)
-                discriminator_gradient_fake.append(discriminator_weight_grads_fake)
-                epochs_index.append(epoch)
+            # if epoch % 1 == 0:
+            #     generator_weight_grads = get_weight_grad(self.combined, noise, valid_y)
+            #     discriminator_weight_grads_real = get_weight_grad(self.discriminator, imgs, d_real_labels)
+            #     discriminator_weight_grads_fake = get_weight_grad(self.discriminator, gen_imgs, d_fake_labels)
+            #     print("-----GRADIENTS")
+            #     print(generator_weight_grads)
+            #     print("")
+            #     generator_gradient.append(generator_weight_grads)
+            #     discriminator_gradient_real.append(discriminator_weight_grads_real)
+            #     discriminator_gradient_fake.append(discriminator_weight_grads_fake)
+            #     epochs_index.append(epoch)
 
 
         print("training took: %.4f minutes" % (time.time() - start / 60))
@@ -520,4 +522,4 @@ if __name__ == '__main__':
     # with tf.device(['/gpu:0','/gpu:1','/gpu:2','/gpu:3','/gpu:4','/gpu:5','/gpu:6','/gpu:7']):
     with tf.device('/gpu:0'):
         gan = GAN(args)
-        gan.train(epochs=5000, batch_size=args.batch_size, save_interval=20)
+        gan.train(epochs=10000, batch_size=args.batch_size, save_interval=20)
