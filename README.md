@@ -7,4 +7,4 @@ We were heavily inspired by the incredible work of [Robbie Barrat](https://githu
 
 See our poster that we presented below.
 
-![alt text](https://ibb.co/4Rvw0f3)
+![alt text](https://github.com/jonathancai11/artificial-art/blob/master/gan-poster.png?raw=true)
